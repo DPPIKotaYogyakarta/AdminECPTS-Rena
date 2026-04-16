@@ -1075,7 +1075,16 @@
                     try {
                         const varObj = JSON.parse(p['Varian Detail']);
                         if (Array.isArray(varObj)) {
-                            varDetailHtml = `<div class="flex flex-wrap gap-1 mt-1">` + varObj.map(v => `<span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold whitespace-nowrap">${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah})</span>`).join('') + `</div>`;
+                            if(varObj.length > 0 && varObj[0].nama_menu) {
+                                // JIKA PESANAN MULTI MENU (KERANJANG)
+                                varDetailHtml = `<div class="mt-1 flex flex-col gap-1">` + varObj.map(c => {
+                                    let vars = c.varian.map(v => `<span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded text-[8px] font-bold whitespace-nowrap">${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah})</span>`).join(' ');
+                                    return `<div class="text-[9px]"><b class="text-orange-500">${c.nama_menu}</b>: ${vars}</div>`;
+                                }).join('') + `</div>`;
+                            } else {
+                                // JIKA PESANAN 1 MENU
+                                varDetailHtml = `<div class="flex flex-wrap gap-1 mt-1">` + varObj.map(v => `<span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold whitespace-nowrap">${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah})</span>`).join('') + `</div>`;
+                            }
                         } else if (varObj.opsi1 || varObj.ukuran) {
                             varDetailHtml = `<span class="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold block mt-1 w-max">${varObj.opsi1||varObj.ukuran} - ${varObj.opsi2||varObj.lengan}</span>`;
                         }
@@ -1371,17 +1380,24 @@
             
             let statusColor = trx.Status.includes('Diproses') ? 'bg-orange-500/10 text-orange-400' : (trx.Status.includes('Selesai') ? 'bg-emerald-500/10 text-emerald-400' : (trx.Status === 'Dibatalkan' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'));
 
-            // Varians Formatting
             let varDetailHtml = "-";
             try {
                 const varObj = JSON.parse(trx['Varian Detail']);
                 if (Array.isArray(varObj)) {
-                    varDetailHtml = `<ul class="list-disc list-inside text-xs text-zinc-400 ml-4 mt-1">` + varObj.map(v => `<li>${v.opsi1||v.ukuran} - ${v.opsi2||v.lengan} (x${v.jumlah})</li>`).join('') + `</ul>`;
+                    if (varObj.length > 0 && varObj[0].nama_menu) {
+                        // JIKA PESANAN MULTI MENU (KERANJANG)
+                        varDetailHtml = `<ul class="list-disc list-inside text-xs text-slate-400 dark:text-zinc-400 ml-4 mt-1">` + varObj.map(c => {
+                            let vars = c.varian.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan} (x${v.jumlah})`).join(', ');
+                            return `<li><b class="text-orange-500">${c.nama_menu}</b>: ${vars}</li>`;
+                        }).join('') + `</ul>`;
+                    } else {
+                        // JIKA PESANAN 1 MENU
+                        varDetailHtml = `<ul class="list-disc list-inside text-xs text-slate-400 dark:text-zinc-400 ml-4 mt-1">` + varObj.map(v => `<li>${v.opsi1||v.ukuran} - ${v.opsi2||v.lengan} (x${v.jumlah})</li>`).join('') + `</ul>`;
+                    }
                 } else if (varObj.opsi1 || varObj.ukuran) {
-                    varDetailHtml = `<span class="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-[10px] font-bold inline-block mt-1">${varObj.opsi1||varObj.ukuran} - ${varObj.opsi2||varObj.lengan}</span>`;
+                    varDetailHtml = `<span class="bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 px-2 py-0.5 rounded text-[10px] font-bold inline-block mt-1">${varObj.opsi1||varObj.ukuran} - ${varObj.opsi2||varObj.lengan}</span>`;
                 }
             } catch(e){}
-
             let deskripsiCustomHTML = '';
             if (trx['ID Menu'] === 'CUSTOM' || trx['ID Baju'] === 'CUSTOM') {
                 deskripsiCustomHTML = `
@@ -1497,7 +1513,16 @@
             let varDetailStr = "-";
             try {
                 const varObj = JSON.parse(p['Varian Detail']);
-                if(Array.isArray(varObj)) { varDetailStr = varObj.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah})`).join(', '); } 
+                if(Array.isArray(varObj)) { 
+                    if(varObj.length > 0 && varObj[0].nama_menu) {
+                        varDetailStr = varObj.map(c => {
+                            let vars = c.varian.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah})`).join(', ');
+                            return `<b>${c.nama_menu}</b><br><span style="font-size:11px">${vars}</span>`;
+                        }).join('<br><br>');
+                    } else {
+                        varDetailStr = varObj.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah})`).join(', '); 
+                    }
+                } 
                 else if (varObj.opsi1 || varObj.ukuran) { varDetailStr = `${varObj.opsi1||varObj.ukuran} - ${varObj.opsi2||varObj.lengan}`; }
             } catch(e){}
 
