@@ -1071,7 +1071,7 @@
                     let badgeColor = status === 'Diproses' || status === 'Diproses (Dapur)' ? "bg-orange-500/10 text-orange-400" : (status === 'Selesai' || status === 'Selesai / Disajikan' ? "bg-emerald-500/10 text-emerald-400" : (status === 'Dibatalkan' ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"));
                     const bayarBadge = isDP ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400";
                     
-                   // MULTI-CART PARSING FIX
+            // MULTI-CART PARSING FIX
             let varDetailHtml = "-";
             let nmDisplay = p['Nama Menu'] || p['Nama Baju'];
             try {
@@ -1121,7 +1121,7 @@
                     return `
                     <tr class="hover:bg-zinc-800/30 border-b border-zinc-800/50">
                         <td class="px-3 md:px-5 py-2.5 md:py-3 cursor-pointer" onclick="bukaDetailPesananModal('${idTrx}')"><span class="font-mono font-bold text-white block text-[10px] md:text-[11px]">${idTrx}</span><span class="text-[9px] md:text-[10px] text-zinc-400 block mt-0.5 md:mt-1 truncate max-w-[100px] md:max-w-[150px]"><i class="fa-regular fa-user"></i> ${p['Username Pembeli'] || '-'}</span><span class="text-[8px] md:text-[9px] text-zinc-500 block mt-0.5">${p.Tanggal.split(' ')[0]}</span>${noAntrianDisplay}</td>
-                        <td class="px-3 md:px-5 py-2.5 md:py-3 cursor-pointer" onclick="bukaDetailPesananModal('${idTrx}')"><p class="font-bold text-white text-[10px] md:text-[11px] w-28 md:w-40 truncate" title="${nm}">${nm}</p>${varDetailHtml}</td>
+                        <td class="px-3 md:px-5 py-2.5 md:py-3 cursor-pointer" onclick="bukaDetailPesananModal('${idTrx}')"><p class="font-bold text-white text-[10px] md:text-[11px] w-28 md:w-40 truncate" title="${nmDisplay}">${nmDisplay}</p>${varDetailHtml}</td>
                         <td class="px-3 md:px-5 py-2.5 md:py-3 cursor-pointer" onclick="bukaDetailPesananModal('${idTrx}')"><p class="text-orange-400 font-extrabold text-[10px] md:text-[11px] mt-0.5 md:mt-1">${hargaTampil} <span class="text-[8px] md:text-[9px] text-zinc-500 font-normal ml-0.5 md:ml-1">(${p.Jumlah}x)</span></p></td>
                         <td class="px-3 md:px-5 py-2.5 md:py-3 text-center">
                             <span class="px-1.5 md:px-2 py-0.5 md:py-1 rounded text-[8px] md:text-[9px] font-bold uppercase bg-zinc-800 text-zinc-300 block mb-0.5 md:mb-1 border border-zinc-700">${metodeDisplay1List}</span>
@@ -1369,7 +1369,6 @@
         function bukaDetailPesananModal(idTrx) {
             const trx = globalPenjualan.find(p => p['ID Transaksi'] === idTrx); if(!trx) return;
             const content = document.getElementById('content-detail-pesanan');
-            const nm = trx['Nama Menu'] || trx['Nama Baju'];
             
             currentTrxPrint = trx;
 
@@ -1390,9 +1389,9 @@
 
             // MULTI-CART PARSING FIX
             let varDetailHtml = "-";
-            let nmDisplay = p['Nama Menu'] || p['Nama Baju'];
+            let nmDisplay = trx['Nama Menu'] || trx['Nama Baju'];
             try {
-                let rawVar = p['Varian Detail'] || "";
+                let rawVar = trx['Varian Detail'] || "";
                 let varObj = typeof rawVar === 'string' ? JSON.parse(rawVar) : rawVar;
                 
                 if (Array.isArray(varObj)) {
@@ -1465,7 +1464,7 @@
                     <span class="px-2 py-1 rounded text-[9px] md:text-[10px] font-bold uppercase ${statusColor}">${trx.Status||'Menunggu'}</span>
                 </div>
                 <div class="mb-3 md:mb-4">
-                    <p class="font-bold text-white text-sm md:text-base">${nm}</p>
+                    <p class="font-bold text-white text-sm md:text-base">${nmDisplay}</p>
                     <p class="text-[9px] md:text-[10px] font-bold text-zinc-400">${trx.Jumlah} Porsi</p>
                     <div class="mt-2 text-sm text-zinc-400"><span class="font-bold">Detail Pilihan:</span> ${varDetailHtml}</div>
                 </div>
@@ -1488,7 +1487,7 @@
         function cetakStruk() {
             if(!currentTrxPrint) return;
             const p = currentTrxPrint;
-            const nm = p['Nama Menu'] || p['Nama Baju'];
+            
             const isDP = p['Tipe Pembayaran'] === 'DP'; let totalHarga = parseInt(p['Total Harga']) || 0; let dpNominal = 0;
             if(isDP && p['Detail DP']) { const match = String(p['Detail DP']).match(/Rp\s*(\d+)/); if(match) dpNominal = parseInt(match[1]); }
             
@@ -1527,32 +1526,31 @@
                 `;
             }
 
-            // MULTI-CART PARSING FIX
-            let varDetailHtml = "-";
-            let nmDisplay = p['Nama Menu'] || p['Nama Baju'];
+            // MULTI-CART PARSING FIX FOR PRINT
+            let tbodyRows = "";
+            let nm = p['Nama Menu'] || p['Nama Baju'];
             try {
                 let rawVar = p['Varian Detail'] || "";
                 let varObj = typeof rawVar === 'string' ? JSON.parse(rawVar) : rawVar;
                 
-                if (Array.isArray(varObj)) {
-                    if (varObj.length > 0 && varObj[0].id_menu) {
-                        nmDisplay = "Pesanan Multi-Item"; 
-                        varDetailHtml = `<div class="space-y-3 mt-1">` + varObj.map(c => {
-                            let vArr = Array.isArray(c.varian) ? c.varian : [];
-                            let vars = vArr.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan} (x${v.jumlah||1})`).join(', ');
-                            return `<div class="bg-black/10 dark:bg-black/30 p-2 rounded-lg border border-slate-200 dark:border-zinc-700/50">
-                                <p class="font-bold text-orange-500 text-xs sm:text-sm">${c.nama_menu||'Menu'}</p>
-                                <p class="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 mt-1">${vars}</p>
-                                <p class="text-[10px] sm:text-xs font-bold text-black dark:text-white mt-1">${c.total_qty||1} Porsi &bull; ${formatRp(c.total_harga||0)}</p>
-                            </div>`;
-                        }).join('') + `</div>`;
-                    } else {
-                        varDetailHtml = `<ul class="list-disc list-inside text-xs text-slate-500 dark:text-zinc-400 ml-4 mt-1">` + varObj.map(v => `<li>${v.opsi1||v.ukuran} - ${v.opsi2||v.lengan} (x${v.jumlah||1})</li>`).join('') + `</ul>`;
+                if(Array.isArray(varObj) && varObj.length > 0 && varObj[0].id_menu) {
+                    tbodyRows = varObj.map(c => {
+                        let vArr = Array.isArray(c.varian) ? c.varian : [];
+                        let vars = vArr.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah||1})`).join(', ');
+                        return `<tr><td style="font-weight: 700; font-size: 15px;">${c.nama_menu||'Menu'}</td><td style="font-size: 13px; color: #6b7280;">${vars}</td><td class="text-center" style="font-weight: 600;">${c.total_qty||1}</td><td class="text-right" style="font-weight: 700;">${formatRp(c.total_harga||0)}</td></tr>`;
+                    }).join('');
+                } else {
+                    let vars = "-";
+                    if(Array.isArray(varObj)) {
+                        vars = varObj.map(v => `${v.opsi1||v.ukuran}-${v.opsi2||v.lengan}(${v.jumlah||1})`).join(', ');
+                    } else if (varObj && (varObj.opsi1 || varObj.ukuran)) {
+                        vars = `${varObj.opsi1||varObj.ukuran} - ${varObj.opsi2||varObj.lengan}`;
                     }
-                } else if (varObj && (varObj.opsi1 || varObj.ukuran)) {
-                    varDetailHtml = `<span class="bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 px-2 py-0.5 rounded text-[10px] font-bold inline-block mt-1">${varObj.opsi1||varObj.ukuran} - ${varObj.opsi2||varObj.lengan}</span>`;
+                    tbodyRows = `<tr><td style="font-weight: 700; font-size: 15px;">${nm}</td><td style="font-size: 13px; color: #6b7280;">${vars}</td><td class="text-center" style="font-weight: 600;">${p.Jumlah}</td><td class="text-right" style="font-weight: 700;">${formatRp(totalHarga)}</td></tr>`;
                 }
-            } catch(e) {}
+            } catch(e) {
+                tbodyRows = `<tr><td style="font-weight: 700; font-size: 15px;">${nm}</td><td style="font-size: 13px; color: #6b7280;">-</td><td class="text-center" style="font-weight: 600;">${p.Jumlah}</td><td class="text-right" style="font-weight: 700;">${formatRp(totalHarga)}</td></tr>`;
+            }
 
             const printLogoUrl = appSettings.logo_light || appSettings.logo_dark || '';
 
@@ -1592,7 +1590,7 @@
                 </head><body>
                     <div class="invoice-box">
                         <div class="header">
-                            <div class="header-left">${printLogoUrl ? `<img src="${printLogoUrl}" alt="Logo">` : `<h1>SEDAP RAYA</h1>`}<p>Kelezatan dalam Setiap Suapan.</p></div>
+                            <div class="header-left">${printLogoUrl ? `<img src="${printLogoUrl}" alt="Logo">` : `<h1>WAROENG DAPUR JOGLO</h1>`}<p>Kelezatan dalam Setiap Suapan.</p></div>
                             <div class="header-right"><h2>INVOICE</h2><p>#${p['ID Transaksi']}</p></div>
                         </div>
                         ${p['Nomor Antrian'] && p['Nomor Antrian'] !== '-' ? `<div class="queue-box"><h3>NOMOR ANTRIAN</h3><h1>${p['Nomor Antrian']}</h1></div>` : ''}
@@ -1600,7 +1598,7 @@
                             <div class="info-col"><h3>Informasi Pembeli</h3><p>${p['Username Pembeli']}</p>${infoMetodeHtml}<h3 style="margin-top: 20px;">Status Pembayaran</h3><p style="color: ${tagihanColor};">${statBayarStr}</p></div>
                             <div class="info-col text-right"><h3>Tanggal Transaksi</h3><p>${p.Tanggal.split(',')[0]}</p><h3 style="margin-top: 20px;">Status Pesanan</h3><span class="status-badge">${p.Status}</span></div>
                         </div>
-                        <table><thead><tr><th>Deskripsi Menu</th><th>Varian Porsi</th><th class="text-center">Qty</th><th class="text-right">Total</th></tr></thead><tbody><tr><td style="font-weight: 700; font-size: 15px;">${nm}</td><td style="font-size: 13px; color: #6b7280;">${varDetailStr}</td><td class="text-center" style="font-weight: 600;">${p.Jumlah}</td><td class="text-right" style="font-weight: 700;">${formatRp(totalHarga)}</td></tr></tbody></table>
+                        <table><thead><tr><th>Deskripsi Menu</th><th>Varian Porsi</th><th class="text-center">Qty</th><th class="text-right">Total</th></tr></thead><tbody>${tbodyRows}</tbody></table>
                         <div class="summary-section"><div class="summary-box">
                                 <div class="summary-row"><span>Total Harga</span><span style="font-weight: 600;">${formatRp(totalHarga)}</span></div>
                                 ${isDP && sudahDP ? `<div class="summary-row"><span>DP Dibayar</span><span style="font-weight: 600;">- ${formatRp(dpNominal)}</span></div>` : ''}
